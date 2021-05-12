@@ -1,0 +1,91 @@
+<?xml version="1.0" ?>
+<robot name="tower" xmlns:xacro="http://ros.org/wiki/xacro">
+  <material name="gray">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+  <link name="tower_base_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://tower_of_hanoi/base.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.04"/>
+      <geometry>
+        <box size="0.7 0.3 0.05"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.08625"/>
+      <geometry>
+        <cylinder length="0.2" radius="0.025"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.2 0 0.08625"/>
+      <geometry>
+        <cylinder length="0.2" radius="0.025"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.2 0 0.08625"/>
+      <geometry>
+        <cylinder length="0.2" radius="0.025"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <!-- CENTER OF MASS -->
+      <origin rpy="0 0 0" xyz="0 0 0.02725"/>
+      <mass value="0.2"/>
+      <!-- box inertia: 1/12*m(y^2+z^2), ... -->
+      <inertia ixx="0.000267245666667" ixy="0" ixz="0" iyy="0.000267245666667" iyz="0" izz="0.000435483"/>
+    </inertial>
+  </link>
+
+  <!-- Pole A -->
+  <joint name="joint_poleA" type="fixed">
+    <origin rpy="0 0 0" xyz="-0.2 0 0.18625"/>
+    <parent link="tower_base_link"/>
+    <child link="poleA"/>
+  </joint>
+  <link name="poleA">
+    <!-- dummy inertial params -->
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1e-8"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+  </link>
+
+  <!-- Pole B -->
+  <joint name="joint_poleB" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0.18625"/>
+    <parent link="tower_base_link"/>
+    <child link="poleB"/>
+  </joint>
+  <link name="poleB">
+    <!-- dummy inertial params -->
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1e-8"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+  </link>
+
+  <!-- Pole C -->
+  <joint name="joint_poleC" type="fixed">
+    <origin rpy="0 0 0" xyz="0.2 0 0.18625"/>
+    <parent link="tower_base_link"/>
+    <child link="poleC"/>
+  </joint>
+  <link name="poleC">
+    <!-- dummy inertial params -->
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1e-8"/>
+      <inertia ixx="1e-12" ixy="0" ixz="0" iyy="1e-12" iyz="0" izz="1e-12"/>
+    </inertial>
+  </link>
+</robot>
