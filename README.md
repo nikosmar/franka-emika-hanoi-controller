@@ -29,9 +29,10 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 
 <!-- CONTACT -->
-## Contact
+## Contributors - Contact Info
 
-Nikolaos Maragkos s - [@twitter_handle]() - email
+Nikolaos Maragkos
+
 Leonidas Karagiannis - [@linkedin_handle](https://www.linkedin.com/in/leonidas-karagiannis-4304a8171/) - leonidask914@gmail.com
 
 Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
