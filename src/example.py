@@ -42,16 +42,22 @@ def error(tf, tf_desired):
     return np.linalg.norm(rd.math.logMap(tf.inverse().multiply(tf_desired)))
 
 
-def create_target_pose(robot, link, translation_matrix_offset, base_translation_vector=None):
+def create_target_pose(robot, link, translation_vector_offset, base_translation_vector=None):
     target_body_pose = robot.body_pose(link)
+
+    # may need to remove rotation transformations
+    rotation_matrix = target_body_pose.rotation()
+    rotation_matrix[0][1] = 0
+    rotation_matrix[1][0] = 0
 
     if base_translation_vector is None:
         base_translation_vector = target_body_pose.translation()
 
-    for i in range(len(translation_matrix_offset)):
-        base_translation_vector[i] += translation_matrix_offset[i]
+    for i in range(len(translation_vector_offset)):
+        base_translation_vector[i] += translation_vector_offset[i]
 
     target_body_pose.set_translation(base_translation_vector)
+    target_body_pose.set_rotation(rotation_matrix)
 
     return target_body_pose
 
@@ -68,7 +74,7 @@ simu.set_graphics(graphics)
 graphics.look_at([2., 0., 1.])
 
 # index of init positions
-index = 3
+index = 0
 
 # load tower
 packages = [["tower_of_hanoi", "tower_description"]]
@@ -119,21 +125,13 @@ simu.add_robot(franka)
 # add a floor
 simu.add_floor()
 
-# HERE ADDED
+# create and initialize controller
+franka_body_pose = franka.body_pose("panda_hand")
 Kp = 2.
 Ki = 0.01
-
-# get the body_pose of the tip of the handle that we want to move at this step
-current_disk_pose = disks[2 - current_move[0]].body_pose("tip")
-
-# set the translation of franka's hand to be the coordinates of the center of the tip of the handle, 
-# slightly higher on the z axis to allow space for the handle
-franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.117],
-                                      [current_disk_pose.matrix()[i][3] for i in range(3)])
-
 controller = PITask(franka_body_pose, dt, Kp, Ki)
 
-# run simulator
+# start with the fingers open
 positions = franka.positions()
 positions[7] = 0.07
 positions[8] = 0.07
@@ -141,22 +139,19 @@ franka.set_positions(positions)
 
 finger_counter = 0
 # action
-# 0 - approach the current handle
-# 1 - close fingers to grab the handle/disk
-# 2 - raise the disk
-# 3 - set target pole
-# 4 - move disk
-# 5 - release disk, get next state, go a bit higher than the next disk, reset action counter (go to 0)
-# 7 - do nothing (the game is over)
-# 9 - go above the next handle to grab it
+# 0-1 - go above the next handle to grab it
+# 2-3 - approach the current handle
+# 4-5 - close fingers to grab the handle/disk and raise the disk
+# 6 - set target pole
+# 7 - move disk
+# 8 - release disk, get next state, go a bit higher than the next disk, reset action counter (go to 0)
+# 10 - do nothing (the game is over)
 
-# actions 0,2,4 are moving the whole robot
+# actions 1,3,5,7 are moving the whole robot
 action = 0
-# flag to enter an if codeblock
-gotonine = 0
 # how far from the absolute coordinates we allow it to be
-# for action    0      2      4
-action_error = [0.001, 0.004, 0.00075]
+action_error = {1: 0.0021, 3: 0.004, 5: 0.0022, 7: 0.00204}
+# run simulator
 while True:
     if simu.step_world():
         break
@@ -167,38 +162,51 @@ while True:
     current_action_error = error(tf, franka_body_pose)
 
     # if moving and we've gotten close enough
-    if action % 2 == 0 and current_action_error < action_error[action // 2]:  # this can be 0,1 or 2
+    if action % 2 == 1 and current_action_error < action_error[action]:
         # stop moving and proceed to the next action
         franka.reset_commands()
-        if gotonine:  # if we've come here from action 5, it means we have to go to action 9
-            action = 9
-        else: 
-            action += 1
+        action += 1
 
-    if action % 2 == 0:  # if still moving and not close enough (current_action_error >= action_error[action // 2])
+    if action % 2 == 1:  # if still moving and not close enough (current_action_error >= action_error[action // 2])
         vel = controller.update(tf)
         jac = franka.jacobian("panda_hand")  # this is in world frame
         jac_pinv = damped_pseudoinverse(jac)  # np.linalg.pinv(jac) # get pseudo-inverse
         cmd = jac_pinv @ vel
         franka.set_commands(cmd)
-    elif action == 1:
+    elif action == 0:
+        current_disk_pose = disks[2 - current_move[0]].body_pose("tip")
+        # get directly above the handle to grab it in next step
+        franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.23],
+                                              [current_disk_pose.matrix()[i][3] for i in range(3)])
+        controller.set_target(franka_body_pose)
+
+        action = 1
+    elif action == 2:
+        current_disk_pose = disks[2 - current_move[0]].body_pose("tip")
+        # get directly above the handle to grab it in next step
+        franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.115],
+                                              [current_disk_pose.matrix()[i][3] for i in range(3)])
+        controller.set_target(franka_body_pose)
+
+        action = 3
+    elif action == 4:
         # close fingers
-        figs = 250
-        if finger_counter < figs:  # while still closing fingers
+        finger_steps = 120
+        if finger_counter < finger_steps:  # while still closing fingers
             positions = franka.positions()
 
-            positions[7] -= 0.00025
-            positions[8] -= 0.00025
+            positions[7] -= 0.0005
+            positions[8] -= 0.0005
             franka.set_positions(positions)
 
             finger_counter += 1
-        elif finger_counter == figs:  # when fingers fully close
+        elif finger_counter == finger_steps:  # when fingers fully close
             # set the target of the handle to a bit more than the height of the tower
             franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.23])
             controller.set_target(franka_body_pose)
 
-            action = 2  # raise target above the pole in next iteration
-    elif action == 3:
+            action = 5  # raise target above the pole in next iteration
+    elif action == 6:
         # move target to the next pole
         poles = ["poleA", "poleB", "poleC"]
         moving_disk, next_pole = current_move
@@ -211,14 +219,14 @@ while True:
         franka_body_pose = create_target_pose(franka, "panda_hand", [pole_x - disk_base_x, pole_y - disk_base_y, 0])
         controller.set_target(franka_body_pose)
 
-        action = 4
-    elif action == 5:
+        action = 7
+    elif action == 8:
         # 1. release
         if finger_counter > 0:
             positions = franka.positions()
 
-            positions[7] += 0.00025
-            positions[8] += 0.00025
+            positions[7] += 0.0005
+            positions[8] += 0.0005
             franka.set_positions(positions)
 
             finger_counter -= 1
@@ -235,7 +243,7 @@ while True:
             current_state[current_move[1]].append(current_move[0])
 
             if current_state == [[2, 1, 0], [], []]:  # if we have reached the final state
-                action = 7  # end
+                action = 10  # end
             # if there are still moves to do move above the next disk to avoid collision from diagonal movement
             else:
                 # get the next move
@@ -245,16 +253,6 @@ while True:
 
                 franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.23],
                                                       [current_disk_pose.matrix()[i][3] for i in range(3)])
-                controller = PITask(franka_body_pose, dt, Kp, Ki)
+                controller.set_target(franka_body_pose)
 
-                gotonine = 1  # make sure to go into action = 9 after going into action = 0, to go grab the handle
                 action = 0
-    elif action == 9:
-        gotonine = 0  # reset the flag to not get in here after next action = 0
-        # we already have the current_disk information from action 5 above
-        # get directly above the handle to grab it in next step
-        franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.117],
-                                              [current_disk_pose.matrix()[i][3] for i in range(3)])
-        controller = PITask(franka_body_pose, dt, Kp, Ki)
-
-        action = 0
