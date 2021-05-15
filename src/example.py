@@ -45,11 +45,6 @@ def error(tf, tf_desired):
 def create_target_pose(robot, link, translation_vector_offset, base_translation_vector=None):
     target_body_pose = robot.body_pose(link)
 
-    # may need to remove rotation transformations
-    rotation_matrix = target_body_pose.rotation()
-    rotation_matrix[0][1] = 0
-    rotation_matrix[1][0] = 0
-
     if base_translation_vector is None:
         base_translation_vector = target_body_pose.translation()
 
@@ -57,7 +52,6 @@ def create_target_pose(robot, link, translation_vector_offset, base_translation_
         base_translation_vector[i] += translation_vector_offset[i]
 
     target_body_pose.set_translation(base_translation_vector)
-    target_body_pose.set_rotation(rotation_matrix)
 
     return target_body_pose
 
@@ -150,7 +144,7 @@ finger_counter = 0
 # actions 1,3,5,7 are moving the whole robot
 action = 0
 # how far from the absolute coordinates we allow it to be
-action_error = {1: 0.0021, 3: 0.004, 5: 0.0022, 7: 0.00204}
+action_error = {1: 0.0035, 3: 0.00285, 5: 0.00245, 7: 0.0012}
 # run simulator
 while True:
     if simu.step_world():
@@ -191,7 +185,7 @@ while True:
         action = 3
     elif action == 4:
         # close fingers
-        finger_steps = 120
+        finger_steps = 122
         if finger_counter < finger_steps:  # while still closing fingers
             positions = franka.positions()
 
@@ -202,7 +196,7 @@ while True:
             finger_counter += 1
         elif finger_counter == finger_steps:  # when fingers fully close
             # set the target of the handle to a bit more than the height of the tower
-            franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.23])
+            franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.24])
             controller.set_target(franka_body_pose)
 
             action = 5  # raise target above the pole in next iteration
