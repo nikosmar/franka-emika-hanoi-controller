@@ -72,7 +72,7 @@ index = 0
 
 # load tower
 packages = [["tower_of_hanoi", "tower_description"]]
-tower = rd.Robot("tower.urdf", packages, "tower_base")
+tower = rd.Robot("urdf/tower.urdf", packages, "tower_base")
 tower.set_positions(init_tower(index))
 tower.fix_to_world()  # fix to world
 
@@ -88,7 +88,7 @@ current_state = [[], [], []]
 # create/load disks
 disks = []
 for i in range(3):
-    disk = rd.Robot("disk" + str(2-i) + ".urdf", packages, "disk" + str(i))
+    disk = rd.Robot("urdf/disk" + str(2-i) + ".urdf", packages, "disk" + str(i))
     disk.set_positions(disk_positions[i])
     disks.append(disk)
     # add disk to simulation
