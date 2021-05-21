@@ -39,7 +39,7 @@ class PITask:
 
 
 def error(tf, tf_desired):
-    return np.linalg.norm(rd.math.logMap(tf.inverse().multiply(tf_desired)))
+    return np.linalg.norm(tf.translation() - tf_desired.translation())
 
 
 def create_target_pose(robot, link, translation_vector_offset, base_translation_vector=None):
@@ -68,7 +68,7 @@ simu.set_graphics(graphics)
 graphics.look_at([2., 0., 1.])
 
 # index of init positions
-index = 0
+index = 3
 
 # load tower
 packages = [["tower_of_hanoi", "tower_description"]]
@@ -144,7 +144,7 @@ finger_counter = 0
 # actions 1,3,5,7 are moving the whole robot
 action = 0
 # how far from the absolute coordinates we allow it to be
-action_error = {1: 0.0035, 3: 0.00285, 5: 0.00245, 7: 0.0012}
+action_error = {1: 0.0035, 3: 0.0025, 5: 0.0025, 7: 0.0012}
 # run simulator
 while True:
     if simu.step_world():
@@ -169,23 +169,29 @@ while True:
         franka.set_commands(cmd)
     elif action == 0:
         current_disk_pose = disks[2 - current_move[0]].body_pose("tip")
-        # get directly above the handle to grab it in next step
+        # rotate the hand and get above the handle
         franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.23],
                                               [current_disk_pose.matrix()[i][3] for i in range(3)])
+
+        current_disk_pose = disks[2 - current_move[0]].body_pose("base_link")
+        franka_hand_rotation = franka_body_pose.rotation()
+        franka_hand_rotation[0][1] = current_disk_pose.rotation()[0][1]
+        franka_body_pose.set_rotation(franka_hand_rotation)
+
         controller.set_target(franka_body_pose)
 
         action = 1
     elif action == 2:
         current_disk_pose = disks[2 - current_move[0]].body_pose("tip")
-        # get directly above the handle to grab it in next step
-        franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.115],
+        # get directly above the handle to grab it in the next step
+        franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.116],
                                               [current_disk_pose.matrix()[i][3] for i in range(3)])
         controller.set_target(franka_body_pose)
 
         action = 3
     elif action == 4:
         # close fingers
-        finger_steps = 122
+        finger_steps = 125
         if finger_counter < finger_steps:  # while still closing fingers
             positions = franka.positions()
 
@@ -196,7 +202,7 @@ while True:
             finger_counter += 1
         elif finger_counter == finger_steps:  # when fingers fully close
             # set the target of the handle to a bit more than the height of the tower
-            franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.24])
+            franka_body_pose = create_target_pose(franka, "panda_hand", [0, 0, 0.22])
             controller.set_target(franka_body_pose)
 
             action = 5  # raise target above the pole in next iteration
