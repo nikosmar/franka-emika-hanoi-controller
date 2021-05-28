@@ -24,7 +24,7 @@ Here will be analyzed the code in the file `runme.py`, as it is the only part th
 
 This class contains the necessary methods for a controller that will move the robot.
 
-**def error ** computes the error, meaning the absolute distance of the robot from the desired end state.
+**def error** computes the error, meaning the absolute distance of the robot from the desired end state.
 
 I can't thoroughly explain the rest. These were given. 
 
