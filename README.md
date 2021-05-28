@@ -5,7 +5,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-This project is a python implementation of solving the famous problem of Hanoi's Tower in the RobotDART aenvironment.
+This project is a python implementation of solving the famous problem of Hanoi's Tower in the RobotDART environment.
 
 It is developed as a semester project for the course of Smart System Technologies and Robotics of the Computer Engineering and Informatics Department, University of Patras.
 The supervisor was Konstantinos Hatzilygeroudis, a core contributor to the RobotDART library.
