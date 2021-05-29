@@ -14,7 +14,7 @@ The supervisor was Konstantinos Hatzilygeroudis, a core contributor to the Robot
 
 # Getting Started
 
-The files `symbolic.py`, `utils.py`, `init_tower_disks.py` as well as all the urdf files, were given by [Constantinos Hatzilygeroudis](https://github.com/costashatz) . 
+The files `symbolic.py`, `utils.py`, `init_tower_disks.py` as well as all the urdf files, were given by [Konstantinos Chatzilygeroudis](https://github.com/costashatz) . 
 
 Here will be analyzed the code in the file `runme.py`, as it is the only part that was developed by the contributors of this repo.
 
